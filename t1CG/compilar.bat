@@ -1,0 +1,1 @@
+g++ %1 -o main.exe -lopengl32 -lfreeglut -lglu328
