@@ -1,3 +1,7 @@
+//essa classe serve como o um local central para gerenciar 
+//o estado, os modulos e a interaçao do aplicativo
+
+//includes e dependencias
 #ifndef APPLICATION_CONTEXT_H
 #define APPLICATION_CONTEXT_H
 
@@ -9,11 +13,15 @@
 #include "ui_manager.h"
 #include <GL/glut.h>
 
+//nesta parte definimos os modos de operação
 enum class AppMode {
+    //aqui o usuario desenha e edita os poligonos 2d
     MODE_2D_EDITOR,
+    //aqui os poligonos desenhados se tornam objetos 3D e podem ser visualizados
     MODE_3D_VIEWER
 };
 
+//definicao de instancias e armazenamento
 class ApplicationContext {
 public:
     PolygonManager polygonManager;
@@ -29,31 +37,37 @@ public:
     int lastMouseX;
     int lastMouseY;
     bool isRightMouseButtonPressed;
-    
+
+    //aqui inicializa os membros de dados com valores padrao
     ApplicationContext() 
         : eventHandler(nullptr), windowDimensions(nullptr),
           applicationState(ApplicationState::DRAWING_POLYGON),
           currentMode(AppMode::MODE_2D_EDITOR),
           lastMouseX(0), lastMouseY(0), isRightMouseButtonPressed(false) {
     }
-    
+
+    //limpa a memoria
     ~ApplicationContext() {
         if (eventHandler) delete eventHandler;
         if (windowDimensions) delete windowDimensions;
     }
-    
+
+    //este metodo tem a funcao de configurar o ambiente e os subsistemas
     void init() {
+        //definimos a cor de fundo do opengl
         glClearColor(0.12f, 0.12f, 0.18f, 1.0f); // Dark background (#1e1e2e)
+        //inicia o membro que gerencia objetos 3D, câmeras, iluminação e as projeções
         sceneManager.init();
         
         windowDimensions = new WindowDimensions(WINDOW_WIDTH, WINDOW_HEIGHT);
         
-        // Inicializa UI Manager
+        //inicializa UI Manager
         uiManager.init(&currentMode);
         
-        // Define callbacks para a UI controlar a cena 3D
+        //ocorre a definicao dos callbacks para a UI controlar as cenas 3D, onde aciona uma 
+        //função que executa a lógica no contexto
         uiManager.setCallbacks(
-            // Shading callback
+            //controle de shading (FLAT, GOURAUD, PHONG)
             [this](ShadingMode mode) {
                 switch (mode) {
                     case ShadingMode::FLAT:
@@ -67,7 +81,7 @@ public:
                         break;
                 }
             },
-            // Projection callback
+            //controle de projeção
             [this](ProjectionMode mode) {
                 switch (mode) {
                     case ProjectionMode::PERSPECTIVE:
@@ -78,48 +92,48 @@ public:
                         break;
                 }
             },
-            // Object type callback
+            //controle do tipo do objeto
             [this](ObjectType type) {
                 sceneManager.clearObjects(); // Remove objetos extrudados/anteriores
                 sceneManager.setObjectType(type);
             },
-            // Object color callback
+            //controle de cores
             [this](float r, float g, float b) {
                 sceneManager.setObjectColor(r, g, b);
                 polygonManager.setFillColor(r, g, b);
                 polygonManager.setLineColor(r, g, b);
             },
-            // Light color callback
+            
             [this](float r, float g, float b) {
                 sceneManager.setLightColor(r, g, b);
             }
         );
         
-        // Define callbacks para o modo 2D
+        //ocorre a definicao dos callbacks para a UI controlar as cenas 2D
         uiManager.set2DCallbacks(
-            // Close polygon (F)
+        //edicao dos poligonos como fechar(F)
             [this]() {
                 if (polygonManager.getVertexCount() >= 3) {
                     polygonManager.closePolygon();
                     applicationState = ApplicationState::POLYGON_READY;
                 }
             },
-            // Fill polygon (P)
+            //edicao dos poligonos como preencher(P)
             [this]() {
                 if (polygonManager.canBeFilled()) {
                     applicationState = ApplicationState::POLYGON_FILLED;
                 }
             },
-            // Clear polygon (C)
+            //edicao dos poligonos como Limpar(C)
             [this]() {
                 polygonManager.clearPolygon();
                 applicationState = ApplicationState::DRAWING_POLYGON;
             },
-            // Toggle vertices (V)
+            //edicao dos poligonos como salvar(S), alterar vertices(V) e ajustar espessura de linha
             [this]() {
                 polygonManager.toggleVertexVisibility();
             },
-            // Save polygon (S)
+
             [this]() {
                 if (polygonManager.canBeFilled()) {
                     bool isFilled = (applicationState == ApplicationState::POLYGON_FILLED);
@@ -129,7 +143,7 @@ public:
                 } else {
                 }
             },
-            // Line width change
+           
             [this](bool increase) {
                 polygonManager.adjustLineThickness(increase);
             }
@@ -138,7 +152,8 @@ public:
         eventHandler = new EventHandler(&polygonManager, &graphicsRenderer, &applicationState, 
                                           windowDimensions, &currentMode);
     }
-    
+
+    //criacao dos objetos 3D
     void create3DObjectsFrom2D() {
         sceneManager.clearObjects();
         bool hasObjects = false;
@@ -146,6 +161,8 @@ public:
         const auto& savedPolys = polygonManager.getSavedPolygons();
         for (const auto& poly : savedPolys) {
             if (poly.vertices.size() >= 3) {
+                //para cada poligono 2D válido, é chamado o sceneManager
+                //transformando a forma plana em um objeto 3D com uma determinada profundidade (50.0f)
                 sceneManager.createExtrudedObject(poly.vertices, 50.0f);
                 hasObjects = true;
             }
@@ -155,7 +172,8 @@ public:
             sceneManager.createExtrudedObject(polygonManager.getVertices(), 50.0f);
             hasObjects = true;
         }
-        
+
+        //caso nenhum objeto 2D estiver pronto, ele cria um cubo 
         if (!hasObjects) {
             std::vector<Point2D> square;
             square.push_back(Point2D(350, 250));
@@ -165,7 +183,9 @@ public:
             sceneManager.createExtrudedObject(square, 100.0f);
         }
     }
-    
+
+    //aqui garante que o objeto seja criado apenas uma vez e que a mesma instância seja sempre retornada, permitindo que
+    //qualquer parte do código acesse os dados e os subsistemas centrais de forma global 
     static ApplicationContext* getInstance() {
         static ApplicationContext instance;
         return &instance;
