@@ -1,7 +1,6 @@
 # Computer Graphics
-This repository is dedicated to the study and practice of the fundamental concepts of Computer Graphics, covering everything from basic principles and classic algorithms to more advanced rendering topics.
+This repository is dedicated to the study and practice of the fundamental concepts of Computer Graphics, covering everything from basic principles and classic algorithms to more advanced rendering topics. This repository explores the core principles of computer graphics, from fundamental algorithms and geometric transformations to advanced rendering techniques, shading models, and antialiasing.
 
-This repository explores the core principles of computer graphics, from fundamental algorithms and geometric transformations to advanced rendering techniques, shading models, and antialiasing.
 ---
 
 ## Objectives
